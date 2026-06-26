@@ -1,0 +1,26 @@
+CREATE TABLE earthquakes
+(
+    id       TEXT             PRIMARY KEY,
+    mag      DOUBLE PRECISION,
+    mag_type TEXT,
+    place    TEXT,
+    time     BIGINT           NOT NULL,
+    updated  BIGINT,
+    tsunami  INTEGER,
+    sig      INTEGER,
+    alert    TEXT,
+    status   TEXT,
+    type     TEXT,
+    title    TEXT,
+    felt     INTEGER,
+    cdi      DOUBLE PRECISION,
+    mmi      DOUBLE PRECISION,
+    nst      INTEGER,
+    dmin     DOUBLE PRECISION,
+    rms      DOUBLE PRECISION,
+    gap      DOUBLE PRECISION,
+    net      TEXT,
+    longitude DOUBLE PRECISION NOT NULL,
+    latitude  DOUBLE PRECISION NOT NULL,
+    depth     DOUBLE PRECISION NOT NULL
+);
