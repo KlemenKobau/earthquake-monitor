@@ -1,5 +1,6 @@
-package com.kkobau.earthquakemonitor.dto;
+package com.kkobau.earthquakemonitor.dto.deserializers;
 
+import com.kkobau.earthquakemonitor.dto.Coordinates;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonParser;
 import tools.jackson.databind.DeserializationContext;
