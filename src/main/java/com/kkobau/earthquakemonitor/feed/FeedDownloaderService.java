@@ -21,7 +21,7 @@ public class FeedDownloaderService {
         this.earthquakeDao = earthquakeDao;
     }
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 */30 * * * *")
     void consumeFeed() {
         try {
             EarthquakeFeedResponse earthquakeFeedResponse = feedClient.fetchFeed();
