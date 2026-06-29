@@ -6,8 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Spring Boot 4.1.0 application (Java 25) that will ingest earthquake data from the USGS GeoJSON feed
 (`https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php`, spec at https://geojson.org/) and
-persist/serve it. The codebase is currently a skeleton: `client/` and `dto/` packages exist but are
-empty, and there are no Flyway migrations yet.
+persist/serve it.
 
 ## Build & Run
 
@@ -27,8 +26,17 @@ automatically by Spring Boot's Docker Compose support when running the app — n
 
 - **Database**: PostgreSQL, schema managed via Flyway (`spring-boot-starter-flyway`,
   `flyway-database-postgresql`). Migrations belong in `src/main/resources/db/migration`.
-- **Persistence**: Spring Data JPA.
-- **Web layer**: Spring MVC (`spring-boot-starter-webmvc`).
+  - `V1__create_earthquakes.sql` — creates the `earthquakes` table (id, mag, mag_type, place,
+    time, updated, tsunami, sig, alert, status, type, title, felt, cdi, mmi, nst, dmin, rms,
+    gap, net, longitude, latitude, depth).
+- **Persistence**: Direct JDBC via `NamedParameterJdbcTemplate`. `EarthquakeDao` (`db/`) does
+  upserts (INSERT … ON CONFLICT DO UPDATE) so re-ingesting the same feed window is idempotent.
+- **Feed ingestion**: `FeedClient` (`feed/`) uses `RestClient` to fetch the USGS GeoJSON feed.
+  `FeedDownloaderService` (`feed/`) runs on a `@Scheduled(cron = "0 */30 * * * *")` — every 30
+  minutes — and calls `FeedClient` then `EarthquakeDao.saveAll`. The feed URL is
+  `https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson`, configured via
+  `earthquake-client.url` in `application.yaml` and bound through `ClientProperties` (`config/`).
+- **Web layer**: Spring MVC (`spring-boot-starter-webmvc`) — no controllers implemented yet.
 - **Tests**: JUnit via `spring-boot-starter-*-test` starters, with Testcontainers
   (`testcontainers-postgresql`) providing a real Postgres instance for integration tests. The
   shared container setup lives in `TestcontainersConfiguration` (test source), wired up via
@@ -38,9 +46,12 @@ automatically by Spring Boot's Docker Compose support when running the app — n
     `src/test/java/com/kkobau/earthquakemonitor/` is the entry point for running the app locally
     with the Testcontainers-backed Postgres instead of Docker Compose.
 - **Package layout** (`src/main/java/com/kkobau/earthquakemonitor/`):
-  - `client/` — intended for the USGS feed HTTP client.
-  - `dto/` — intended for GeoJSON DTOs modeling the USGS feed response (FeatureCollection,
-    Feature, Geometry, properties, per the GeoJSON spec).
+  - `config/` — `ClientProperties`: `@ConfigurationProperties(prefix = "earthquake-client")`.
+  - `db/` — `EarthquakeDao`: JDBC upsert repository.
+  - `dto/` — GeoJSON DTOs: `EarthquakeFeedResponse`, `EarthquakeFeature`, `EarthquakeProperties`,
+    `PointGeometry`, `Coordinates`, `Metadata`. `CoordinatesDeserializer` (`dto/deserializers/`)
+    handles the GeoJSON coordinates array → `Coordinates` record mapping.
+  - `feed/` — `FeedClient` (HTTP), `FeedDownloaderService` (scheduler).
   - Root package holds `EarthquakemonitorApplication` (the `@SpringBootApplication` entry point).
 - Lombok is available (compile-time only, excluded from the runnable jar via the Spring Boot Maven
   plugin's `<excludes>` config) — use it for DTO/entity boilerplate instead of hand-writing
